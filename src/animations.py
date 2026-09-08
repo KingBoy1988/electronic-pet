@@ -4,7 +4,7 @@
 
 import os
 from typing import Optional, Dict, List
-from PySide6.QtGui import QPixmap, QPainter, QColor, QFont, QPen
+from PySide6.QtGui import QPixmap, QPainter, QColor, QFont
 from PySide6.QtCore import Qt, QTimer, QSize
 from src.config import CONFIG, PetState
 
@@ -153,6 +153,10 @@ class PlaceholderRenderer:
     @staticmethod
     def get_min_size() -> QSize:
         return QSize(200, 200)
+
+
+# 延迟导入 QPen
+from PySide6.QtGui import QPen
 
 
 class AnimationController:

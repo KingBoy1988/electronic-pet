@@ -21,9 +21,8 @@ class PetState(Enum):
 @dataclass
 class AppConfig:
     """应用配置"""
-    # 窗口
-    window_width: int = 480
-    window_height: int = 640
+    # 窗口 - 桌面宠物模式
+    pet_size: int = 200           # 宠物显示尺寸
     window_title: str = "电子宠物 - Electronic Pet"
 
     # 宠物状态衰减（每秒衰减量）
@@ -53,6 +52,7 @@ class AppConfig:
     # 动画
     animation_interval: int = 200    # 动画帧间隔（毫秒）
     status_update_interval: int = 1000  # 状态更新间隔（毫秒）
+    temp_state_duration: float = 2.0  # 临时状态持续时间（秒）
 
     # 路径
     base_dir: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

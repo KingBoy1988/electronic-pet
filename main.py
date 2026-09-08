@@ -1,6 +1,6 @@
 """
-Electronic Pet - 电子宠物桌面应用
-程序入口
+Electronic Pet - 桌面电子宠物
+程序入口 - 透明窗口桌面宠物模式
 """
 
 import sys
@@ -10,11 +10,15 @@ from src.controller import PetController
 
 
 def main():
+    # 高 DPI 支持
+    QApplication.setHighDpiScaleFactorScalingPolicy(
+        Qt.HighDpiScaleFactorScalingPolicy.PassThrough
+    )
+
     app = QApplication(sys.argv)
     app.setApplicationName("Electronic Pet")
     app.setOrganizationName("ElectronicPet")
-
-    # 高 DPI 支持
+    app.setQuitOnLastWindowClosed(True)
     app.setStyle("Fusion")
 
     controller = PetController()
