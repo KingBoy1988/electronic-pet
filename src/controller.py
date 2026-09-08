@@ -11,6 +11,7 @@ from src.config import CONFIG, PetState
 from src.pet import Pet
 from src.pet_widget import PetWidget
 from src.status_bar import StatusPanel
+from src.singing import singing_manager
 
 
 class PetController:
@@ -44,6 +45,12 @@ class PetController:
 
         # 交互冷却
         self._cooldowns = {}
+
+        # 唱歌状态
+        self._is_singing = False
+        self._sing_timer = QTimer()
+        self._sing_timer.setSingleShot(True)
+        self._sing_timer.timeout.connect(self._on_sing_end)
 
         # 初始显示
         self._refresh_ui()
@@ -106,6 +113,7 @@ class PetController:
             PetState.HAPPY.value: "非常开心!",
             PetState.SAD.value: "不太开心...",
             PetState.SICK.value: "生病了...",
+            PetState.SINGING.value: "🎵 唱歌中~♪",
         }
         return state_text.get(self.pet.current_state, "")
 
@@ -182,6 +190,34 @@ class PetController:
     def _on_save(self):
         """手动保存"""
         self.pet.save()
+
+    # ========== 唱歌 ==========
+
+    def _on_sing(self):
+        """开始唱歌"""
+        if not self.pet.is_alive or self.pet.current_state == PetState.SLEEPING.value:
+            return
+        if self._is_singing:
+            # 正在唱歌 -> 停止
+            self._on_sing_end()
+            return
+        if not self._can_interact("sing"):
+            return
+
+        self._is_singing = True
+        self.pet_widget.set_state(PetState.SINGING.value)
+        # 开始播放音乐
+        singing_manager.start_singing(CONFIG.singing_duration)
+        # 设置唱歌结束定时器
+        self._sing_timer.start(int(CONFIG.singing_duration * 1000))
+
+    def _on_sing_end(self):
+        """唱歌结束"""
+        self._is_singing = False
+        singing_manager.stop_singing()
+        self._sing_timer.stop()
+        self.pet._auto_update_state()
+        self._refresh_ui()
 
     def _on_revive(self):
         """复活宠物"""

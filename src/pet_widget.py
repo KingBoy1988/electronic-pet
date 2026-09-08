@@ -87,6 +87,17 @@ class PetWidget(QWidget):
         if self._is_bouncing or self._dragging:
             return  # 揉捏/弹回时不做基础弹跳
 
+        # 唱歌时左右摇摆
+        if self.current_state == PetState.SINGING.value:
+            self._rotation += self._bounce_dir * 0.8
+            if abs(self._rotation) > 8:
+                self._bounce_dir *= -1
+            self._bounce_offset += self._bounce_dir * 1
+            if self._bounce_offset > 4 or self._bounce_offset < -4:
+                self._bounce_dir *= -1
+            self.update()
+            return
+
         if self.current_state in (PetState.IDLE.value, PetState.HAPPY.value, PetState.PLAYING.value):
             self._bounce_offset += self._bounce_dir * 2
             if self._bounce_offset > 5:
@@ -336,6 +347,7 @@ class PetWidget(QWidget):
         sleep_action = menu.addAction("💤 睡觉" if self.pet.current_state != PetState.SLEEPING.value else "☀️ 醒来")
         clean_action = menu.addAction("🛁 洗澡")
         pet_action = menu.addAction("🤚 抚摸")
+        sing_action = menu.addAction("🎵 唱歌" if not self.controller._is_singing else "🛑 停止唱歌")
 
         menu.addSeparator()
 
@@ -368,6 +380,8 @@ class PetWidget(QWidget):
             self.controller._on_clean()
         elif action == pet_action:
             self.controller._on_pet()
+        elif action == sing_action:
+            self.controller._on_sing()
         elif action == panel_action:
             self.controller.toggle_status_panel()
         elif action == save_action:

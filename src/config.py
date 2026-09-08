@@ -16,6 +16,7 @@ class PetState(Enum):
     HAPPY = "happy"
     SAD = "sad"
     SICK = "sick"
+    SINGING = "singing"
 
 
 @dataclass
@@ -53,6 +54,7 @@ class AppConfig:
     animation_interval: int = 200    # 动画帧间隔（毫秒）
     status_update_interval: int = 1000  # 状态更新间隔（毫秒）
     temp_state_duration: float = 2.0  # 临时状态持续时间（秒）
+    singing_duration: float = 27.5   # 唱歌持续时间（秒）
 
     # 路径
     base_dir: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
