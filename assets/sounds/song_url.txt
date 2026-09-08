@@ -1,0 +1,35 @@
+# 在这里放你的歌曲链接（只放链接，一行，不要 # 开头）
+#
+# ===== 直接链接到播放器 =====
+# 放入网页链接后，宠物会自动转换为深链，直接在播放器 App 中打开歌曲！
+# 不需要浏览器，直接在播放器里播放
+#
+# 支持的链接（自动识别并直连播放器）：
+#
+# 【网易云音乐】
+# https://music.163.com/song?id=1811821591    -> 直接打开网易云音乐 App 播放
+# https://music.163.com/playlist?id=123456     -> 打开歌单
+# https://music.163.com/album?id=123456        -> 打开专辑
+#
+# 【QQ音乐】
+# https://y.qq.com/n/ryqq/songDetail/xxx      -> 直接打开 QQ 音乐 App 播放
+#
+# 【Spotify】
+# https://open.spotify.com/track/xxx           -> 直接打开 Spotify 播放
+#
+# 【哔哩哔哩】
+# https://www.bilibili.com/video/BVxxx         -> 直接打开 B站 App 播放
+#
+# 【酷狗音乐】
+# https://www.kugou.com/song/#hash=xxx         -> 直接打开酷狗 App 播放
+#
+# 也可以直接写协议链接（不需要 http）：
+# orpheus://song/1811821591   （网易云）
+# qqmusic://qq.com/ui/0       （QQ音乐）
+# spotify:track:xxx           （Spotify）
+#
+# ===== 使用方法 =====
+# 1. 把链接粘贴在下面（去掉 # 注释）
+# 2. 保存文件
+# 3. 右键宠物 -> 唱歌
+# 4. 宠物自动打开播放器 App 直接播放，并跟着摇摆唱歌 27.5 秒

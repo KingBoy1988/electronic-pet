@@ -1,29 +1,61 @@
-# Sounds Directory
+# Sounds Directory - 唱歌功能配置
 
-## 如何让宠物唱歌
+## 播放优先级（自动选择）
 
-### 放入歌曲
+1. **深链直连播放器**（推荐） - 直接在音乐 App 中打开指定歌曲
+2. **命令行播放器流式播放** - mpv/ffplay/vlc 直接播放 URL
+3. **浏览器播放** - 打开浏览器播放
+4. **本地 MP3 文件** - `song.mp3`
+5. **本地播放器 App** - 启动已安装的音乐播放器
+6. **蜂鸣旋律** - 用系统蜂鸣声播放一段旋律
 
-将你的 MP3 文件改名为 `song.mp3`，放入此目录：
+## 方式一：深链直连播放器（推荐）
+
+在 `song_url.txt` 中放入歌曲网页链接：
 
 ```
-assets/sounds/song.mp3
+https://music.163.com/song?id=1811821591
 ```
 
-然后右键宠物 -> 点击"🎵 唱歌"，宠物就会拿起麦克风唱 27.5 秒！
+保存后右键宠物 -> 唱歌，宠物会：
 
-### 没有歌曲文件时
+1. **自动识别**链接来源（网易云/QQ音乐/Spotify/B站等）
+2. **转换为深链协议**（orpheus://, qqmusic://, spotify: 等）
+3. **直接在播放器 App 中打开**指定歌曲，不开浏览器
+4. 宠物跟着音乐摇摆唱歌 27.5 秒
 
-如果没有 `song.mp3`，宠物会使用蜂鸣声播放一段欢快旋律（不需要任何音频文件）。
+### 支持的链接来源
 
-### 支持的格式
+| 来源 | 网页链接格式 | 深链协议 |
+|------|-------------|---------|
+| 网易云音乐 | `music.163.com/song?id=xxx` | `orpheus://song/xxx` |
+| 网易云歌单 | `music.163.com/playlist?id=xxx` | `orpheus://playlist/xxx` |
+| 网易云专辑 | `music.163.com/album?id=xxx` | `orpheus://album/xxx` |
+| QQ音乐 | `y.qq.com/n/ryqq/songDetail/xxx` | `qqmusic://qq.com/ui/...` |
+| Spotify | `open.spotify.com/track/xxx` | `spotify:track:xxx` |
+| 哔哩哔哩 | `bilibili.com/video/BVxxx` | `bilibili://video/BVxxx` |
+| 酷狗音乐 | `kugou.com/song/#hash=xxx` | `kugou://hash=xxx` |
 
-- 格式：MP3
-- 文件名：必须为 `song.mp3`
-- 文件大小：建议 5MB 以内（约 30 秒）
+也可以直接写协议链接（不需要 http）。
 
-### 注意
+## 方式二：本地 MP3 文件
 
-- 请确保你有合法使用该音频文件的权利
-- 歌曲播放时宠物会左右摇摆、拿麦克风
-- 再次点击"停止唱歌"可以提前停止
+将 `song.mp3` 放在此目录，右键宠物 -> 唱歌时优先播放。
+
+## 方式三：直接写协议链接
+
+在 `song_url.txt` 中直接写协议（不以 http 开头）：
+
+```
+orpheus://song/1811821591
+```
+
+这样无需转换，直接打开播放器。
+
+## 播放器检测
+
+宠物会自动检测以下播放器是否已安装：
+- Windows: 网易云音乐、QQ音乐、Spotify、酷狗音乐
+- macOS: NeteaseMusic、QQMusic、Spotify、酷狗、Apple Music
+
+如果对应播放器未安装，会自动降级到其他播放方式。
