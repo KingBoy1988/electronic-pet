@@ -1,38 +1,50 @@
 @echo off
-chcp 65001 >nul
-title 电子宠物安装
+REM Electronic Pet - Windows Installer
+REM Encoding: ASCII only to avoid CMD garbled text
 
 echo ================================
-echo   电子宠物 - 安装程序
+echo   Electronic Pet - Installer
 echo ================================
 echo.
 
-REM 检查 Python
+REM Check Python
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [错误] 未检测到 Python，请先安装 Python 3.8+
-    echo 下载地址: https://www.python.org/downloads/
-    echo 安装时请勾选 "Add Python to PATH"
+    echo [ERROR] Python not found!
+    echo Please install Python 3.8+ from:
+    echo https://www.python.org/downloads/
+    echo Check "Add Python to PATH" during installation.
+    echo.
     pause
     exit /b 1
 )
 
-echo [1/3] 安装依赖中...
+echo [1/3] Installing PySide6...
 pip install PySide6 -q
 if errorlevel 1 (
-    echo [错误] 依赖安装失败，请检查网络
+    echo [ERROR] Failed to install PySide6.
+    echo Please check your internet connection and try again.
     pause
     exit /b 1
 )
 
-echo [2/3] 创建快捷方式...
+echo [2/3] Creating desktop shortcut...
 set "TARGET=%~dp0main.py"
-set "SHORTCUT=%USERPROFILE%\Desktop\电子宠物.lnk"
+set "SHORTCUT=%USERPROFILE%\Desktop\ElectronicPet.lnk"
 
-powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT%'); $s.TargetPath = 'pythonw'; $s.Arguments = '"%TARGET%"'; $s.WorkingDirectory = '%~dp0'; $s.IconLocation = 'pythonw.exe,0'; $s.Description = '电子宠物桌面应用'; $s.Save()"
+REM Use PowerShell to create shortcut
+powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT%'); $s.TargetPath = 'pythonw'; $s.Arguments = '\"%TARGET%\"'; $s.WorkingDirectory = '%~dp0'; $s.Description = 'Electronic Pet Desktop'; $s.Save()"
 
-echo [3/3] 安装完成！
+if exist "%SHORTCUT%" (
+    echo Shortcut created successfully!
+) else (
+    echo [WARNING] Shortcut creation failed.
+    echo You can run the pet manually with: pythonw main.py
+)
+
+echo [3/3] Done!
 echo.
-echo 桌面上已创建"电子宠物"快捷方式，双击即可运行。
+echo Installation complete! Double-click "ElectronicPet" on your desktop to start.
+echo Or run: pythonw main.py
 echo.
 pause
