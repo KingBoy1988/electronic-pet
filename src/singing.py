@@ -11,6 +11,7 @@ Supports:
 
 import os
 import re
+import random
 import threading
 import time
 import subprocess
@@ -32,7 +33,6 @@ class SingingManager:
         """开始唱歌"""
         if self.is_singing:
             return
-
         self.is_singing = True
         self._play_music_async(duration)
 
@@ -46,19 +46,15 @@ class SingingManager:
         def _play():
             self._play_music(duration)
             self.is_singing = False
-
         self._thread = threading.Thread(target=_play, daemon=True)
         self._thread.start()
 
     def _play_music(self, duration):
         """按优先级尝试播放音乐"""
-        # 1. 检查 song_url.txt (在线音乐链接)
         url = self._get_song_url()
         if url:
             self._play_url(url, duration)
             return
-
-        # 2. 检查 song.mp3 (本地音频文件)
         song_path = os.path.join(CONFIG.sounds_dir, "song.mp3")
         if os.path.exists(song_path):
             try:
@@ -66,177 +62,109 @@ class SingingManager:
                 return
             except Exception as e:
                 print(f"[Singing] Local file playback failed: {e}")
-
-        # 3. 尝试启动本地音乐播放器
         if self._try_launch_player(duration):
             return
-
-        # 4. 蜂鸣旋律兜底
         self._play_beep_melody(duration)
 
-    # ========== 在线音乐链接 ==========
-
     def _get_song_url(self):
-        """从 song_url.txt 读取音乐链接"""
+        """从 song_url.txt 读取音乐链接，支持多首随机选择"""
         url_file = os.path.join(CONFIG.sounds_dir, "song_url.txt")
         if not os.path.exists(url_file):
             return None
         try:
+            urls = []
             with open(url_file, 'r', encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith('#') and \
-                       (line.startswith('http://') or line.startswith('https://')):
-                        return line
+                       (line.startswith('http://') or line.startswith('https://') or
+                        line.startswith('orpheus://') or line.startswith('qqmusic://') or
+                        line.startswith('tencent3://') or line.startswith('spotify:') or
+                        line.startswith('bilibili://') or line.startswith('kugou://') or
+                        line.startswith('kuwo://') or line.startswith('itmss://')):
+                        urls.append(line)
+            if urls:
+                return random.choice(urls) if len(urls) > 1 else urls[0]
         except Exception:
             pass
         return None
 
-    # ========== 深链转换 - 直接链接到播放器 ==========
-
     def _convert_to_deep_link(self, url):
-        """
-        将网页音乐链接转换为播放器深链协议
-        返回 (protocol_url, player_name) 或 None
-        """
-        # --- 网易云音乐 ---
         m = re.search(r'music\.163\.com/song\?id=(\d+)', url)
         if m:
             return (f"orpheus://song/{m.group(1)}", "网易云音乐")
-
         m = re.search(r'music\.163\.com/playlist\?id=(\d+)', url)
         if m:
             return (f"orpheus://playlist/{m.group(1)}", "网易云音乐")
-
         m = re.search(r'music\.163\.com/album\?id=(\d+)', url)
         if m:
             return (f"orpheus://album/{m.group(1)}", "网易云音乐")
-
-        # --- QQ 音乐 ---
         m = re.search(r'y\.qq\.com/n/ryqq/songDetail/(\w+)', url)
         if m:
             return (f"qqmusic://qq.com/ui/0#!/7A/song_id=0&song_mid={m.group(1)}", "QQ音乐")
-
         m = re.search(r'y\.qq\.com/n/ryqq/playlist/(\w+)', url)
         if m:
             return (f"tencent3://qq.com/ui/0#!/7A/playlist_id={m.group(1)}", "QQ音乐")
-
-        # --- Spotify ---
         m = re.search(r'open\.spotify\.com/track/(\w+)', url)
         if m:
             return (f"spotify:track:{m.group(1)}", "Spotify")
-
         m = re.search(r'open\.spotify\.com/playlist/(\w+)', url)
         if m:
             return (f"spotify:playlist:{m.group(1)}", "Spotify")
-
-        # --- 哔哩哔哩 ---
         m = re.search(r'bilibili\.com/video/(BV\w+)', url)
         if m:
             return (f"bilibili://video/{m.group(1)}", "哔哩哔哩")
-
-        # --- 酷狗音乐 ---
         m = re.search(r'kugou\.com/song/.*hash=(\w+)', url)
         if m:
             return (f"kugou://hash={m.group(1)}", "酷狗音乐")
-
-        # --- 直接是协议链接 ---
         for proto_prefix, name in [
-            ("orpheus://", "网易云音乐"),
-            ("qqmusic://", "QQ音乐"),
-            ("tencent3://", "QQ音乐"),
-            ("spotify:", "Spotify"),
-            ("bilibili://", "哔哩哔哩"),
-            ("kugou://", "酷狗音乐"),
+            ("orpheus://", "网易云音乐"), ("qqmusic://", "QQ音乐"),
+            ("tencent3://", "QQ音乐"), ("spotify:", "Spotify"),
+            ("bilibili://", "哔哩哔哩"), ("kugou://", "酷狗音乐"),
             ("kuwo://", "酷我音乐"),
         ]:
             if url.startswith(proto_prefix):
                 return (url, name)
-
         return None
 
     def _open_deep_link(self, protocol_url, player_name):
-        """用系统命令打开深链，直接在播放器 App 中播放"""
         system = platform.system()
         print(f"[Singing] Deep-linking to {player_name}: {protocol_url}")
-
         try:
             if system == "Windows":
-                subprocess.Popen(
-                    ["cmd", "/c", "start", "", protocol_url],
-                    shell=False,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+                subprocess.Popen(["cmd", "/c", "start", "", protocol_url],
+                    shell=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 return True
             elif system == "Darwin":
-                subprocess.Popen(
-                    ["open", protocol_url],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+                subprocess.Popen(["open", protocol_url],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 return True
             else:
-                subprocess.Popen(
-                    ["xdg-open", protocol_url],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+                subprocess.Popen(["xdg-open", protocol_url],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 return True
         except Exception as e:
             print(f"[Singing] Deep link failed: {e}")
             return False
 
     def _is_player_installed(self, player_name):
-        """检查指定播放器是否已安装"""
         system = platform.system()
-
         if system == "Windows":
             player_paths = {
-                "网易云音乐": [
-                    r"C:\Program Files\CloudMusic\cloudmusic.exe",
-                    r"C:\Program Files (x86)\CloudMusic\cloudmusic.exe",
-                ],
-                "QQ音乐": [
-                    r"C:\Program Files\Tencent\QQMusic\QQMusic.exe",
-                    r"C:\Program Files (x86)\Tencent\QQMusic\QQMusic.exe",
-                ],
-                "Spotify": [
-                    os.path.expandvars(r"%APPDATA%\Spotify\Spotify.exe"),
-                    r"C:\Program Files\Spotify\Spotify.exe",
-                ],
-                "酷狗音乐": [
-                    r"C:\Program Files\KuGou\KuGou.exe",
-                    r"C:\Program Files (x86)\KuGou\KuGou.exe",
-                ],
+                "网易云音乐": [r"C:\Program Files\CloudMusic\cloudmusic.exe", r"C:\Program Files (x86)\CloudMusic\cloudmusic.exe"],
+                "QQ音乐": [r"C:\Program Files\Tencent\QQMusic\QQMusic.exe", r"C:\Program Files (x86)\Tencent\QQMusic\QQMusic.exe"],
+                "Spotify": [os.path.expandvars(r"%APPDATA%\Spotify\Spotify.exe"), r"C:\Program Files\Spotify\Spotify.exe"],
+                "酷狗音乐": [r"C:\Program Files\KuGou\KuGou.exe", r"C:\Program Files (x86)\KuGou\KuGou.exe"],
             }
-            paths = player_paths.get(player_name, [])
-            return any(os.path.exists(p) for p in paths)
-
+            return any(os.path.exists(p) for p in player_paths.get(player_name, []))
         elif system == "Darwin":
-            mac_apps = {
-                "网易云音乐": "NeteaseMusic",
-                "QQ音乐": "QQMusic",
-                "Spotify": "Spotify",
-                "酷狗音乐": "KugouMusic",
-                "Apple Music": "Music",
-                "哔哩哔哩": "哔哩哔哩",
-            }
+            mac_apps = {"网易云音乐": "NeteaseMusic", "QQ音乐": "QQMusic", "Spotify": "Spotify", "酷狗音乐": "KugouMusic", "Apple Music": "Music", "哔哩哔哩": "哔哩哔哩"}
             app = mac_apps.get(player_name, "")
             return os.path.exists(f"/Applications/{app}.app")
-
         return False
 
-    # ========== URL 播放主逻辑 ==========
-
     def _play_url(self, url, duration):
-        """
-        播放在线音乐链接
-        优先级：深链直连播放器 > 命令行播放器流式播放 > 浏览器
-        """
         system = platform.system()
-
-        # 1. 尝试深链直连播放器
         deep = self._convert_to_deep_link(url)
         if deep:
             protocol_url, player_name = deep
@@ -247,8 +175,6 @@ class SingingManager:
                     time.sleep(duration)
                     return
             print(f"[Singing] {player_name} not installed, trying other methods...")
-
-        # 2. 尝试用命令行播放器直接流式播放 URL
         for player in ["mpv", "ffplay", "vlc", "mpg123"]:
             try:
                 cmd = [player]
@@ -267,25 +193,17 @@ class SingingManager:
                 if self._player_proc:
                     self._player_proc.terminate()
                 continue
-
-        # 3. 兜底：打开浏览器
         print("[Singing] No deep-link or CLI player, opening browser...")
         webbrowser.open(url)
         time.sleep(duration)
 
-    # ========== 本地 MP3 ==========
-
     def _play_local_file(self, song_path, duration):
-        """播放本地 MP3 文件"""
         system = platform.system()
-
         if system == "Windows":
             for player in ["mpv", "ffplay", "vlc"]:
                 try:
-                    proc = subprocess.Popen(
-                        [player, "--no-video", "--quiet", song_path],
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-                    )
+                    proc = subprocess.Popen([player, "--no-video", "--quiet", song_path],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     self._player_proc = proc
                     proc.wait(timeout=duration + 5)
                     return
@@ -298,14 +216,11 @@ class SingingManager:
                 time.sleep(duration)
             except Exception:
                 raise
-
         elif system == "Darwin":
             for player in ["afplay", "mpv", "ffplay"]:
                 try:
-                    proc = subprocess.Popen(
-                        [player, song_path],
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-                    )
+                    proc = subprocess.Popen([player, song_path],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     self._player_proc = proc
                     proc.wait(timeout=duration + 5)
                     return
@@ -314,7 +229,6 @@ class SingingManager:
                         self._player_proc.terminate()
                     continue
             raise RuntimeError("No audio player found on macOS")
-
         else:
             for player in ["mpg123", "mpv", "ffplay", "cvlc"]:
                 try:
@@ -332,12 +246,8 @@ class SingingManager:
                     continue
             raise RuntimeError("No audio player found on Linux")
 
-    # ========== 本地音乐播放器 App ==========
-
     def _try_launch_player(self, duration):
-        """尝试启动已安装的音乐播放器应用"""
         system = platform.system()
-
         if system == "Windows":
             players = [
                 (r"C:\Program Files\Tencent\QQMusic\QQMusic.exe", "QQMusic"),
@@ -354,7 +264,6 @@ class SingingManager:
                     subprocess.Popen([path], shell=False)
                     time.sleep(duration)
                     return True
-
         elif system == "Darwin":
             players = ["QQMusic", "NeteaseMusic", "KugouMusic", "Spotify", "Music"]
             for app in players:
@@ -364,13 +273,9 @@ class SingingManager:
                     subprocess.Popen(["open", app_path])
                     time.sleep(duration)
                     return True
-
         return False
 
-    # ========== 蜂鸣旋律 ==========
-
     def _play_beep_melody(self, duration):
-        """没有 MP3 时用蜂鸣声播放一段欢快旋律"""
         melody = [
             (523, 0.3), (523, 0.3), (587, 0.3), (659, 0.6),
             (659, 0.3), (587, 0.3), (523, 0.3), (440, 0.6),
@@ -391,7 +296,6 @@ class SingingManager:
             total += beat
 
     def _beep(self, freq, duration):
-        """发出蜂鸣音"""
         system = platform.system()
         if system == "Windows":
             import winsound
@@ -401,24 +305,16 @@ class SingingManager:
                 pass
         else:
             try:
-                subprocess.run(
-                    ["play", "-nq", "-t", "alsa", "synth", str(duration),
-                     "sine", str(freq)],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                    timeout=duration + 1
-                )
+                subprocess.run(["play", "-nq", "-t", "alsa", "synth", str(duration), "sine", str(freq)],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=duration + 1)
             except Exception:
                 try:
-                    subprocess.run(
-                        ["beep", "-f", str(int(freq)), "-l", str(int(duration * 1000))],
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                        timeout=duration + 1
-                    )
+                    subprocess.run(["beep", "-f", str(int(freq)), "-l", str(int(duration * 1000))],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=duration + 1)
                 except Exception:
                     time.sleep(duration)
 
     def _stop_music(self):
-        """停止音乐播放"""
         if self._player_proc:
             try:
                 self._player_proc.terminate()
@@ -431,5 +327,4 @@ class SingingManager:
             self._player_proc = None
 
 
-# 全局实例
 singing_manager = SingingManager()
