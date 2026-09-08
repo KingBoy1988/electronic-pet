@@ -10,10 +10,11 @@ from src.controller import PetController
 
 
 def main():
-    # 高 DPI 支持
-    QApplication.setHighDpiScaleFactorScalingPolicy(
-        Qt.HighDpiScaleFactorScalingPolicy.PassThrough
-    )
+    # 高 DPI 支持（兼容不同版本的 PySide6）
+    if hasattr(QApplication, 'setHighDpiScaleFactorRoundingPolicy'):
+        QApplication.setHighDpiScaleFactorRoundingPolicy(
+            Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+        )
 
     app = QApplication(sys.argv)
     app.setApplicationName("Electronic Pet")
